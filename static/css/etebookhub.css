@@ -1,0 +1,77 @@
+:root {
+  --ete-blue: #0b57d0;
+  --ete-blue-dark: #083b8f;
+  --ete-green: #0a9f55;
+  --ete-yellow: #f5c400;
+  --ete-red: #e53935;
+  --ete-bg: #f5f7fb;
+  --ete-text: #172033;
+  --ete-muted: #6b7280;
+  --ete-border: #e8ecf2;
+  --ete-radius: 18px;
+}
+
+body { background: var(--ete-bg) !important; color: var(--ete-text); }
+.app-header { height: 70px !important; border-bottom: 1px solid var(--ete-border); background: rgba(255,255,255,.96) !important; }
+.app-header .nav-link { color: #526071; }
+.app-sidebar { background: #fff !important; border-right: 1px solid var(--ete-border); box-shadow: 4px 0 18px rgba(15,23,42,.03) !important; }
+.sidebar-brand { height: 70px; border-bottom: 1px solid var(--ete-border); background: #fff; }
+.brand-link { display:flex; align-items:center; gap:10px; height:70px; padding:0 20px; text-decoration:none; }
+.brand-mark { width:38px; height:38px; border-radius:12px; display:grid; place-items:center; color:#fff; background: linear-gradient(135deg,var(--ete-blue),var(--ete-green)); box-shadow: 0 8px 18px rgba(11,87,208,.18); }
+.brand-text { font-size:1.05rem; font-weight:800 !important; letter-spacing:-.3px; color:var(--ete-blue); }
+.brand-text .book { color:var(--ete-green); }
+.brand-text .hub { color:var(--ete-red); }
+.sidebar-wrapper { padding: 14px 12px; }
+.sidebar-menu .nav-link { border-radius: 12px; color:#64748b !important; margin: 3px 0; padding: 11px 13px; }
+.sidebar-menu .nav-link:hover { background:#f1f6ff; color:var(--ete-blue) !important; }
+.sidebar-menu .nav-link.active { background:#eaf2ff !important; color:var(--ete-blue) !important; font-weight:700; box-shadow: inset 3px 0 0 var(--ete-blue); }
+.sidebar-menu .nav-icon { width:1.5rem; font-size:1.05rem; }
+.sidebar-menu .nav-treeview .nav-link { padding-left: 28px; }
+.app-main { min-height: calc(100vh - 112px); }
+.app-content { padding-top: 8px; }
+.page-heading { margin-bottom: 22px; }
+.page-heading h1 { font-size:1.65rem; font-weight:800; letter-spacing:-.6px; margin:0; }
+.page-heading p { margin:5px 0 0; color:var(--ete-muted); }
+.card, .small-box { border:1px solid var(--ete-border) !important; border-radius:var(--ete-radius) !important; box-shadow:0 10px 28px rgba(15,23,42,.05) !important; overflow:hidden; }
+.card { background:#fff; }
+.card-header { background:#fff !important; border-bottom:1px solid var(--ete-border) !important; padding:17px 20px; }
+.card-body { padding:20px; }
+.stat-card { position:relative; min-height:145px; padding:22px; background:#fff !important; color:var(--ete-text) !important; }
+.stat-card .stat-icon { position:absolute; right:20px; top:20px; width:48px; height:48px; border-radius:14px; display:grid; place-items:center; font-size:1.35rem; }
+.stat-card .stat-number { font-size:2rem; font-weight:800; line-height:1; margin-bottom:9px; }
+.stat-card .stat-label { color:var(--ete-muted); font-size:.92rem; }
+.stat-card .stat-link { display:inline-flex; margin-top:16px; font-size:.82rem; font-weight:700; text-decoration:none; }
+.stat-blue .stat-icon { background:#eaf2ff; color:var(--ete-blue); } .stat-blue .stat-link { color:var(--ete-blue); }
+.stat-green .stat-icon { background:#e8f8ef; color:var(--ete-green); } .stat-green .stat-link { color:var(--ete-green); }
+.stat-yellow .stat-icon { background:#fff8db; color:#ad8500; } .stat-yellow .stat-link { color:#ad8500; }
+.btn { border-radius:10px !important; font-weight:600; }
+.btn-primary { background:var(--ete-blue) !important; border-color:var(--ete-blue) !important; }
+.btn-primary:hover { background:var(--ete-blue-dark) !important; border-color:var(--ete-blue-dark) !important; }
+.btn-success { background:var(--ete-green) !important; border-color:var(--ete-green) !important; }
+.form-control, .form-select { border-radius:11px; border-color:#dfe5ed; min-height:44px; }
+.form-control:focus, .form-select:focus { border-color:#8eb4f5; box-shadow:0 0 0 .2rem rgba(11,87,208,.10); }
+.search-box { position:relative; }
+.search-box i { position:absolute; left:14px; top:13px; color:#94a3b8; }
+.search-box input { padding-left:40px; }
+.table thead th { color:#64748b; font-size:.78rem; text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid var(--ete-border); }
+.table tbody td, .table tbody th { padding:15px 10px; border-color:#eef1f5; }
+.badge-soft { border-radius:999px; padding:7px 10px; font-weight:700; }
+.badge-available { background:#e8f8ef; color:#087a40; }
+.badge-loaned { background:#fff5d6; color:#8a6900; }
+.action-btn { width:36px; height:36px; display:inline-grid; place-items:center; padding:0 !important; }
+.logo-strip { display:flex; height:4px; border-radius:999px; overflow:hidden; margin-top:18px; }
+.logo-strip span { flex:1; }
+.logo-strip .b { background:var(--ete-blue); } .logo-strip .y { background:var(--ete-yellow); } .logo-strip .g { background:var(--ete-green); } .logo-strip .r { background:var(--ete-red); }
+.welcome-card { background:linear-gradient(135deg,#fff 0%,#f6faff 100%); }
+.welcome-icon { width:62px; height:62px; border-radius:18px; display:grid; place-items:center; font-size:1.65rem; background:#eaf2ff; color:var(--ete-blue); }
+.app-footer { background:#fff; border-top:1px solid var(--ete-border); color:#64748b; }
+.user-pill { color:#344054; font-weight:600; }
+.user-avatar { width:36px; height:36px; display:inline-grid; place-items:center; border-radius:50%; background:#eaf2ff; color:var(--ete-blue); }
+@media (max-width: 767.98px) { .page-heading h1 { font-size:1.35rem; } .brand-text { font-size:.95rem; } }
+
+.form-section-icon { width:42px; height:42px; border-radius:12px; display:grid; place-items:center; background:#eaf2ff; color:var(--ete-blue); font-size:1.1rem; }
+.input-group-modern { position:relative; }
+.input-group-modern > i { position:absolute; z-index:2; left:14px; top:13px; color:#94a3b8; }
+.input-group-modern .form-control { padding-left:42px; }
+.user-security-note { display:flex; gap:12px; align-items:flex-start; padding:14px 16px; border-radius:12px; background:#f5f9ff; color:#536174; font-size:.9rem; border:1px solid #e3edfb; }
+.user-security-note > i { color:var(--ete-green); font-size:1.1rem; margin-top:2px; }
