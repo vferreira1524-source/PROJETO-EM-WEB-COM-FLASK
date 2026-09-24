@@ -464,4 +464,8 @@ projeto por outros usuários.
 
 Caso novas funcionalidades, dependências ou mudanças na estrutura sejam
 adicionadas ao ETEBookHub, recomenda-se atualizar este arquivo para
+<<<<<<< HEAD
 manter as instruções sincronizadas com o projeto.
+=======
+manter as instruções sincronizadas com o projeto.
+>>>>>>> 472e005f8b6e63caf6df64454e8ce6c7d6cac519
