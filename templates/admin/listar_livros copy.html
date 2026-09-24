@@ -1,0 +1,82 @@
+{% extends 'admin/base.html' %}
+{% block title %}Livros | ETEBookHub{% endblock %}
+{% block content %}
+<div class="page-heading d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+  <div><h1>Acervo de livros</h1><p>Pesquise, edite, empreste ou devolva livros.</p></div>
+  <a href="{{ url_for('cadastrarLivro') }}" class="btn btn-primary px-4"><i class="bi bi-plus-lg me-1"></i>Novo livro</a>
+</div>
+<div class="card">
+  <div class="card-body">
+    <form method="GET" class="row g-2 mb-4">
+      <div class="col-lg-7"><div class="search-box"><i class="bi bi-search"></i><input type="text" name="busca" class="form-control" placeholder="Buscar por título ou autor..." value="{{ busca }}"></div></div>
+      <div class="col-auto"><button type="submit" class="btn btn-primary px-4">Buscar</button></div>
+      {% if busca %}<div class="col-auto"><a href="{{ url_for('listarLivros') }}" class="btn btn-light border">Limpar</a></div>{% endif %}
+    </form>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+
+       <thead>
+    <tr>
+        <th>#</th>
+        <th>Capa</th>
+        <th>Título</th>
+        <th>Autor</th>
+        <th>Categoria</th>
+        <th>Status</th>
+        <th class="text-end">Ações</th>
+    </tr>
+</thead>
+        
+        <tbody>
+        {% for livro in livros %}
+        <tr>
+          <th class="text-muted">{{ livro['id'] }}</th><td class="fw-semibold">{{ livro['titulo'] }}</td><td>{{ livro['autor'] }}</td><td class="text-muted">{{ livro['categoria'] or '—' }}</td>
+          <th class="text-muted">{{ livro['id'] }}</th>
+
+<td>
+    {% if livro['img'] %}
+        <img
+            src="{{ livro['img'] }}"
+            alt="Capa de {{ livro['titulo'] }}"
+            style="
+                width: 55px;
+                height: 80px;
+                object-fit: cover;
+                border-radius: 6px;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            "
+        >
+    {% else %}
+        <div
+            style="
+                width: 55px;
+                height: 80px;
+                border-radius: 6px;
+                background: #f1f3f5;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #6c757d;
+            "
+            title="Sem capa"
+        >
+            <i class="bi bi-book"></i>
+        </div>
+    {% endif %}
+</td>
+
+<td class="fw-semibold">{{ livro['titulo'] }}</td>
+          <td>{% if livro['status'] == 'disponivel' %}<span class="badge-soft badge-available">Disponível</span>{% else %}<span class="badge-soft badge-loaned">Emprestado</span>{% endif %}</td>
+          <td class="text-end"><div class="d-flex justify-content-end gap-1">
+            <a href="{{ url_for('editarLivro', id_livro=livro['id']) }}" class="btn btn-light border action-btn" title="Editar"><i class="bi bi-pencil"></i></a>
+            {% if livro['status'] == 'disponivel' %}<form action="{{ url_for('emprestarLivro', id_livro=livro['id']) }}" method="POST"><button class="btn btn-outline-primary action-btn" title="Emprestar"><i class="bi bi-arrow-up-right"></i></button></form>{% else %}<form action="{{ url_for('devolverLivro', id_livro=livro['id']) }}" method="POST"><button class="btn btn-outline-success action-btn" title="Devolver"><i class="bi bi-arrow-down-left"></i></button></form>{% endif %}
+            <form action="{{ url_for('removerLivro', id_livro=livro['id']) }}" method="POST" onsubmit="return confirm('Remover este livro do acervo?');"><button class="btn btn-light border text-danger action-btn" title="Remover"><i class="bi bi-trash"></i></button></form>
+          </div></td>
+        </tr>
+        {% else %}<tr><td colspan="7" class="text-center text-muted py-5">Nenhum livro encontrado.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
