@@ -1,169 +1,290 @@
 import requests
 
 
-def buscar_capa(titulo, autor=""):
-    consulta = f"{titulo} {autor}".strip()
+def buscar_dados_livro(titulo, autor=""):
 
-    url = "https://openlibrary.org/search.json"
-
-    parametros = {
-        "q": consulta,
-        "limit": 10
+    resultado = {
+        "capa": None,
+        "categoria": None
     }
 
+    titulo = titulo.strip()
+    autor = autor.strip()
+
+    if not titulo:
+        return resultado
+
     try:
+
+        # --------------------------------
+        # BUSCAR LIVRO NA OPEN LIBRARY
+        # --------------------------------
+
+        url = "https://openlibrary.org/search.json"
+
+        params = {
+            "title": titulo,
+            "author": autor,
+            "limit": 10
+        }
+
         resposta = requests.get(
             url,
-            params=parametros,
-            timeout=10,
-            headers={
-                "User-Agent": "ETEBookHub/1.0"
-            }
+            params=params,
+            timeout=10
         )
 
-        print("STATUS:", resposta.status_code)
-        print("URL:", resposta.url)
+        print("STATUS OPEN LIBRARY:", resposta.status_code)
 
         if resposta.status_code != 200:
-            print("ERRO:", resposta.text)
-            return None
+            return resultado
 
         dados = resposta.json()
 
         livros = dados.get("docs", [])
 
-        print("RESULTADOS:", len(livros))
+        print("LIVROS ENCONTRADOS:", len(livros))
+
+        if not livros:
+            return resultado
+
+        print("PRIMEIRO LIVRO:")
+        print(livros[0])
+
+        # --------------------------------
+        # PROCURAR CAPA
+        # --------------------------------
 
         for livro in livros:
+
             capa_id = livro.get("cover_i")
 
             if capa_id:
-                return f"https://covers.openlibrary.org/b/id/{capa_id}-L.jpg"
 
-        return None
+                resultado["capa"] = (
+                    f"https://covers.openlibrary.org/b/id/"
+                    f"{capa_id}-L.jpg"
+                )
 
-    except requests.RequestException as erro:
-        print("ERRO DE CONEXÃO:", erro)
-        return None
+                break
 
-def buscar_categoria(titulo, autor=""):
-    consulta = f"{titulo} {autor}".strip()
+        # --------------------------------
+        # PROCURAR CATEGORIA
+        # --------------------------------
 
-    url = "https://openlibrary.org/search.json"
+        todos_assuntos = []
 
-    parametros = {
-        "q": consulta,
-        "limit": 10,
-        "fields": "title,author_name,subject,subject_facet"
-    }
-
-    try:
-        resposta = requests.get(
-            url,
-            params=parametros,
-            timeout=10,
-            headers={
-                "User-Agent": "ETEBookHub/1.0"
-            }
-        )
-
-        if resposta.status_code != 200:
-            return None
-
-        dados = resposta.json()
-        livros = dados.get("docs", [])
-
-        assuntos = []
+        # Tenta encontrar assuntos diretamente
+        # nos resultados da pesquisa
 
         for livro in livros:
-            assuntos.extend(livro.get("subject", []))
-            assuntos.extend(livro.get("subject_facet", []))
 
-        # Junta tudo em letras minúsculas para facilitar a busca
-        assuntos_texto = " ".join(assuntos).lower()
+            assuntos = livro.get("subject", [])
 
-        # Categorias do ETEBookHub
-        if any(palavra in assuntos_texto for palavra in [
-            "fantasy",
-            "magic",
-            "witch",
-            "wizard",
-            "vampire",
-            "monster"
-        ]):
-            return "Fantasia"
+            if assuntos:
+                todos_assuntos.extend(assuntos)
 
-        if any(palavra in assuntos_texto for palavra in [
-            "science fiction",
-            "science-fiction",
-            "space",
-            "robot",
-            "future"
-        ]):
-            return "Ficção Científica"
+            subject_facet = livro.get(
+                "subject_facet",
+                []
+            )
 
-        if any(palavra in assuntos_texto for palavra in [
-            "romance",
-            "love stories",
-            "love"
-        ]):
-            return "Romance"
+            if subject_facet:
+                todos_assuntos.extend(
+                    subject_facet
+                )
 
-        if any(palavra in assuntos_texto for palavra in [
-            "mystery",
-            "detective",
-            "crime",
-            "murder"
-        ]):
-            return "Mistério"
+        # --------------------------------
+        # SE NÃO ENCONTROU ASSUNTOS,
+        # CONSULTA A OBRA DIRETAMENTE
+        # --------------------------------
 
-        if any(palavra in assuntos_texto for palavra in [
-            "horror",
-            "horrors",
-            "ghost"
-        ]):
-            return "Terror"
+        if not todos_assuntos:
 
-        if any(palavra in assuntos_texto for palavra in [
-            "history",
-            "historical"
-        ]):
-            return "História"
+            chave_obra = livros[0].get("key")
 
-        if any(palavra in assuntos_texto for palavra in [
-            "biography",
-            "autobiography"
-        ]):
-            return "Biografia"
+            print(
+                "CHAVE DA OBRA:",
+                chave_obra
+            )
 
-        if any(palavra in assuntos_texto for palavra in [
-            "children",
-            "juvenile",
-            "school stories"
-        ]):
-            return "Infantil / Juvenil"
+            if chave_obra:
 
-        if any(palavra in assuntos_texto for palavra in [
+                try:
+
+                    url_obra = (
+                        f"https://openlibrary.org"
+                        f"{chave_obra}.json"
+                    )
+
+                    resposta_obra = requests.get(
+                        url_obra,
+                        timeout=10
+                    )
+
+                    print(
+                        "STATUS OBRA:",
+                        resposta_obra.status_code
+                    )
+
+                    if resposta_obra.status_code == 200:
+
+                        dados_obra = (
+                            resposta_obra.json()
+                        )
+
+                        assuntos_obra = (
+                            dados_obra.get(
+                                "subjects",
+                                []
+                            )
+                        )
+
+                        print(
+                            "ASSUNTOS DA OBRA:",
+                            assuntos_obra[:30]
+                        )
+
+                        if assuntos_obra:
+
+                            todos_assuntos.extend(
+                                assuntos_obra
+                            )
+
+                except Exception as erro:
+
+                    print(
+                        "ERRO AO BUSCAR "
+                        "ASSUNTOS DA OBRA:",
+                        erro
+                    )
+
+        # --------------------------------
+        # IDENTIFICAR CATEGORIA
+        # --------------------------------
+
+        print(
+            "TOTAL DE ASSUNTOS:",
+            len(todos_assuntos)
+        )
+
+        print(
+            "ASSUNTOS ENCONTRADOS:",
+            todos_assuntos[:30]
+        )
+
+        resultado["categoria"] = (
+            identificar_categoria(
+                todos_assuntos
+            )
+        )
+
+    except Exception as erro:
+
+        print(
+            "ERRO AO BUSCAR DADOS:",
+            erro
+        )
+
+    return resultado
+
+
+def identificar_categoria(assuntos):
+
+    if not assuntos:
+        return None
+
+    assuntos_texto = " ".join(
+        str(assunto).lower()
+        for assunto in assuntos
+    )
+
+    categorias = {
+
+        "Fantasia": [
+    "fantasy",
+    "fantasies",
+    "fantasy fiction",
+    "magic",
+    "magical",
+    "magic in fiction",
+    "magic and supernatural",
+    "supernatural",
+    "witches",
+    "witch",
+    "witches in fiction",
+    "wizards",
+    "wizard",
+    "wizards in fiction",
+    "vampires",
+    "vampire",
+    "vampires in fiction",
+    "monsters",
+    "monster",
+    "monsters in fiction",
+    "alchemy",
+    "harry potter"
+],
+        
+
+        "Aventura": [
             "adventure",
             "adventures"
-        ]):
-            return "Aventura"
+        ],
 
-        if any(palavra in assuntos_texto for palavra in [
-            "poetry",
-            "poems"
-        ]):
-            return "Poesia"
+        "Romance": [
+            "romance",
+            "love stories"
+        ],
 
-        if any(palavra in assuntos_texto for palavra in [
-            "religion",
-            "christian",
-            "bible"
-        ]):
-            return "Religião"
+        "Mistério": [
+            "mystery",
+            "detective",
+            "detective stories"
+        ],
 
-        return "Literatura"
+        "Terror": [
+            "horror",
+            "ghosts",
+            "terror"
+        ],
 
-    except requests.RequestException as erro:
-        print("ERRO DE CONEXÃO:", erro)
-        return None
+        "Ficção Científica": [
+            "science fiction",
+            "science-fiction",
+            "sci-fi"
+        ],
+
+        "História": [
+            "history",
+            "historical"
+        ],
+
+        "Biografia": [
+            "biography",
+            "autobiography"
+        ],
+
+        "Infantil": [
+            "children",
+            "children's books"
+        ],
+
+        "Juvenil": [
+            "young adult",
+            "teen",
+            "juvenile",
+            "school stories",
+            "school life"
+        ]
+    }
+
+    for categoria, palavras in categorias.items():
+
+        for palavra in palavras:
+
+            if palavra in assuntos_texto:
+
+                return categoria
+
+    return "Outros"

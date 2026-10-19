@@ -15,30 +15,22 @@
         <input type="text" class="form-control" id="autor" name="autor" placeholder="Nome do autor" required>
     </div>
 <div class="col-md-5">
+
     <label for="categoria" class="form-label fw-semibold">
         Categoria
     </label>
 
-    <div class="input-group">
-        <input
-            type="text"
-            class="form-control"
-            id="categoria"
-            name="categoria"
-            placeholder="Ex.: Fantasia"
-        >
-
-        <button
-            type="button"
-            class="btn btn-primary"
-            id="btnBuscarCategoria"
-        >
-            <i class="bi bi-search me-1"></i>
-            Buscar
-        </button>
-    </div>
+    <input
+        type="text"
+        class="form-control"
+        id="categoria"
+        name="categoria"
+        placeholder="Ex.: Fantasia"
+        readonly
+    >
 
     <div id="mensagemCategoria" class="small mt-1"></div>
+
 </div>
 
     <div class="col-12 mt-3">
@@ -59,13 +51,14 @@
         <button
             type="button"
             class="btn btn-primary"
-            id="btnBuscarCapa"
-        >
-            <i class="bi bi-search me-1"></i>
-            Buscar capa
+            id="btnBuscarDados">
+            
+        <i class="bi bi-search me-1"></i>
+            Buscar dados
         </button>
     </div>
-</div>
+
+    <div id="mensagemCapa" class="small mt-1"></div>
 
 <div class="col-12 text-center mt-4">
     <div id="mensagemCapa" class="text-muted mb-2"></div>
@@ -94,125 +87,161 @@
 </div>
 
 <script>
-document.getElementById("btnBuscarCapa").addEventListener("click", async function () {
+document.addEventListener("DOMContentLoaded", function () {
 
-    const titulo = document.getElementById("titulo").value.trim();
-    const autor = document.getElementById("autor").value.trim();
+    const botao = document.getElementById("btnBuscarDados");
 
-    const botao = this;
-    const mensagem = document.getElementById("mensagemCapa");
-    const preview = document.getElementById("previewCapa");
-    const campoCapa = document.getElementById("capa_url");
-
-    if (!titulo) {
-        alert("Digite o título do livro.");
+    if (!botao) {
+        console.error("Botão btnBuscarDados não encontrado.");
         return;
     }
 
-    botao.disabled = true;
-    botao.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Buscando...';
+    botao.addEventListener("click", async function () {
 
-    mensagem.textContent = "";
-    preview.style.display = "none";
+        const titulo = document.getElementById("titulo").value.trim();
+        const autor = document.getElementById("autor").value.trim();
 
-    try {
+        const campoCategoria = document.getElementById("categoria");
+        const campoCapa = document.getElementById("capa_url");
 
-        const resposta = await fetch(
-            `/buscar_capa?titulo=${encodeURIComponent(titulo)}&autor=${encodeURIComponent(autor)}`
-        );
+        const mensagemCategoria =
+            document.getElementById("mensagemCategoria");
 
-        const dados = await resposta.json();
+        const mensagemCapa =
+            document.getElementById("mensagemCapa");
 
-        if (dados.capa) {
+        const preview =
+            document.getElementById("previewCapa");
 
-            campoCapa.value = dados.capa;
 
-            preview.src = dados.capa;
-            preview.style.display = "inline-block";
+        if (!titulo) {
+            alert("Digite o título do livro.");
+            return;
+        }
 
-            mensagem.textContent = "Capa encontrada com sucesso!";
-            mensagem.className = "text-success mb-2";
 
-        } else {
+        botao.disabled = true;
 
-            campoCapa.value = "";
+        botao.innerHTML =
+            '<i class="bi bi-hourglass-split me-1"></i> Buscando...';
 
-            mensagem.textContent = "Não encontramos uma capa para este livro.";
-            mensagem.className = "text-danger mb-2";
+
+        try {
+
+            console.log("Buscando dados...");
+            console.log("Título:", titulo);
+            console.log("Autor:", autor);
+
+
+            const url =
+                `/buscar_dados_livro?titulo=${encodeURIComponent(titulo)}&autor=${encodeURIComponent(autor)}`;
+
+            console.log("URL:", url);
+
+
+            const resposta = await fetch(url);
+
+            console.log("Status:", resposta.status);
+
+
+            if (!resposta.ok) {
+                throw new Error(
+                    "Erro HTTP: " + resposta.status
+                );
+            }
+
+
+            const dados = await resposta.json();
+
+            console.log("DADOS RECEBIDOS:", dados);
+
+
+            // ============================
+            // CAPA
+            // ============================
+
+            if (dados.capa) {
+
+                campoCapa.value = dados.capa;
+
+                preview.src = dados.capa;
+
+                preview.style.display = "inline-block";
+
+                mensagemCapa.textContent =
+                    "Capa encontrada com sucesso!";
+
+                mensagemCapa.className =
+                    "text-success mb-2";
+
+            } else {
+
+                campoCapa.value = "";
+
+                preview.style.display = "none";
+
+                mensagemCapa.textContent =
+                    "Capa não encontrada.";
+
+                mensagemCapa.className =
+                    "text-danger mb-2";
+            }
+
+
+            // ============================
+            // CATEGORIA
+            // ============================
+
+            if (dados.categoria) {
+
+                campoCategoria.value =
+                    dados.categoria;
+
+                mensagemCategoria.textContent =
+                    "Categoria encontrada!";
+
+                mensagemCategoria.className =
+                    "text-success small mt-1";
+
+            } else {
+
+                campoCategoria.value = "";
+
+                mensagemCategoria.textContent =
+                    "Categoria não encontrada.";
+
+                mensagemCategoria.className =
+                    "text-warning small mt-1";
+            }
+
+
+        } catch (erro) {
+
+            console.error(
+                "ERRO AO BUSCAR DADOS:",
+                erro
+            );
+
+            mensagemCapa.textContent =
+                "Erro ao buscar os dados.";
+
+            mensagemCapa.className =
+                "text-danger mb-2";
+
+
+        } finally {
+
+            botao.disabled = false;
+
+            botao.innerHTML =
+                '<i class="bi bi-search me-1"></i> Buscar dados';
 
         }
 
-    } catch (erro) {
+    });
 
-        console.error(erro);
-
-        mensagem.textContent = "Erro ao buscar a capa.";
-        mensagem.className = "text-danger mb-2";
-
-    } finally {
-
-        botao.disabled = false;
-        botao.innerHTML = '<i class="bi bi-search me-1"></i> Buscar capa';
-    }
 });
 </script>
 
-<script>
-document.getElementById("btnBuscarCategoria").addEventListener("click", async function () {
-
-    const titulo = document.getElementById("titulo").value.trim();
-    const autor = document.getElementById("autor").value.trim();
-
-    const botao = this;
-    const campoCategoria = document.getElementById("categoria");
-    const mensagem = document.getElementById("mensagemCategoria");
-
-    if (!titulo) {
-        alert("Digite o título do livro.");
-        return;
-    }
-
-    botao.disabled = true;
-    botao.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Buscando...';
-
-    mensagem.textContent = "";
-
-    try {
-
-        const resposta = await fetch(
-            `/buscar_categoria?titulo=${encodeURIComponent(titulo)}&autor=${encodeURIComponent(autor)}`
-        );
-
-        const dados = await resposta.json();
-
-        if (dados.categoria) {
-
-            campoCategoria.value = dados.categoria;
-
-            mensagem.textContent = "Categoria encontrada!";
-            mensagem.className = "text-success small mt-1";
-
-        } else {
-
-            campoCategoria.value = "";
-
-            mensagem.textContent = "Não encontramos uma categoria.";
-            mensagem.className = "text-danger small mt-1";
-        }
-
-    } catch (erro) {
-
-        console.error(erro);
-
-        mensagem.textContent = "Erro ao buscar a categoria.";
-        mensagem.className = "text-danger small mt-1";
-
-    } finally {
-
-        botao.disabled = false;
-        botao.innerHTML = '<i class="bi bi-search me-1"></i> Buscar';
-    }
-});
-</script>
 
 {% endblock %}

@@ -3,7 +3,7 @@ from functools import wraps
 
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
-from google_books import buscar_capa, buscar_categoria
+from google_books import buscar_dados_livro
 
 from database import (
     buscar_livro,
@@ -143,40 +143,6 @@ def listarLivros():
     livros = listar_livros(busca if busca else None)
     return render_template("admin/listar_livros.html", livros=livros, busca=busca)
 
-@app.route("/buscar_capa")
-@login_required
-def buscarCapa():
-    titulo = request.args.get("titulo", "").strip()
-    autor = request.args.get("autor", "").strip()
-    img = request.form.get("img", "").strip()
-
-    if not titulo:
-        return {"capa": None, "erro": "Informe o título do livro."}
-
-    capa = buscar_capa(titulo, autor)
-
-    return {
-        "capa": capa
-    }
-
-
-@app.route("/buscar_categoria")
-@login_required
-def buscarCategoria():
-    titulo = request.args.get("titulo", "").strip()
-    autor = request.args.get("autor", "").strip()
-
-    if not titulo:
-        return {
-            "categoria": None,
-            "erro": "Informe o título do livro."
-        }
-
-    categoria = buscar_categoria(titulo, autor)
-
-    return {
-        "categoria": categoria
-    }
 
 @app.route("/cadastrar_livro", methods=["GET", "POST"])
 @login_required
@@ -250,5 +216,28 @@ def removerLivro(id_livro):
     return redirect(url_for("listarLivros"))
 
 
+@app.route("/buscar_dados_livro")
+@login_required
+def buscarDadosLivro():
+
+    titulo = request.args.get("titulo", "").strip()
+    autor = request.args.get("autor", "").strip()
+
+    if not titulo:
+        return {
+            "capa": None,
+            "categoria": None,
+            "erro": "Informe o título do livro."
+        }
+
+    dados = buscar_dados_livro(titulo, autor)
+
+    return dados
+
+
+
 if __name__ == "__main__":
     app.run(debug=True, port=5005)
+
+
+

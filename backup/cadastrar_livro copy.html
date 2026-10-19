@@ -1,0 +1,218 @@
+{% extends 'admin/base.html' %}
+{% block title %}Novo livro | ETEBookHub{% endblock %}
+{% block content %}
+<div class="page-heading"><h1>Cadastrar livro</h1><p>Adicione um novo título ao acervo escolar.</p>
+</div>
+<div class="row justify-content-center"><div class="col-xl-8"><div class="card"><div class="card-body p-4 p-lg-5">
+<form method="POST">
+  <div class="row g-3">
+    <div class="col-12">
+        <label for="titulo" class="form-label fw-semibold">Título do livro</label>
+        <input type="text" class="form-control" id="titulo" name="titulo" placeholder="Digite o título" required>
+    </div>
+    <div class="col-md-7">
+        <label for="autor" class="form-label fw-semibold">Autor</label>
+        <input type="text" class="form-control" id="autor" name="autor" placeholder="Nome do autor" required>
+    </div>
+<div class="col-md-5">
+    <label for="categoria" class="form-label fw-semibold">
+        Categoria
+    </label>
+
+    <div class="input-group">
+        <input
+            type="text"
+            class="form-control"
+            id="categoria"
+            name="categoria"
+            placeholder="Ex.: Fantasia"
+        >
+
+        <button
+            type="button"
+            class="btn btn-primary"
+            id="btnBuscarCategoria"
+        >
+            <i class="bi bi-search me-1"></i>
+            Buscar
+        </button>
+    </div>
+
+    <div id="mensagemCategoria" class="small mt-1"></div>
+</div>
+
+    <div class="col-12 mt-3">
+    <label for="capa_url" class="form-label fw-semibold">
+        Capa do livro
+    </label>
+
+    <div class="input-group">
+        <input
+            type="text"
+            class="form-control"
+            id="capa_url"
+            name="img"
+            placeholder="A capa será encontrada automaticamente"
+            readonly
+        >
+
+        <button
+            type="button"
+            class="btn btn-primary"
+            id="btnBuscarCapa"
+        >
+            <i class="bi bi-search me-1"></i>
+            Buscar capa
+        </button>
+    </div>
+</div>
+
+<div class="col-12 text-center mt-4">
+    <div id="mensagemCapa" class="text-muted mb-2"></div>
+
+    <img
+        id="previewCapa"
+        src=""
+        alt="Prévia da capa do livro"
+        style="
+            display: none;
+            max-width: 180px;
+            max-height: 260px;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        "
+    >
+</div>
+
+  </div>
+  <div class="d-flex gap-2 mt-4"><button type="submit" class="btn btn-primary px-4"><i class="bi bi-check-lg me-1"></i>Cadastrar livro</button><a href="{{ url_for('listarLivros') }}" class="btn btn-light border px-4">Cancelar</a></div>
+</form>
+</div>
+</div>
+</div>
+</div>
+
+<script>
+document.getElementById("btnBuscarCapa").addEventListener("click", async function () {
+
+    const titulo = document.getElementById("titulo").value.trim();
+    const autor = document.getElementById("autor").value.trim();
+
+    const botao = this;
+    const mensagem = document.getElementById("mensagemCapa");
+    const preview = document.getElementById("previewCapa");
+    const campoCapa = document.getElementById("capa_url");
+
+    if (!titulo) {
+        alert("Digite o título do livro.");
+        return;
+    }
+
+    botao.disabled = true;
+    botao.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Buscando...';
+
+    mensagem.textContent = "";
+    preview.style.display = "none";
+
+    try {
+
+        const resposta = await fetch(
+            `/buscar_capa?titulo=${encodeURIComponent(titulo)}&autor=${encodeURIComponent(autor)}`
+        );
+
+        const dados = await resposta.json();
+
+        if (dados.capa) {
+
+            campoCapa.value = dados.capa;
+
+            preview.src = dados.capa;
+            preview.style.display = "inline-block";
+
+            mensagem.textContent = "Capa encontrada com sucesso!";
+            mensagem.className = "text-success mb-2";
+
+        } else {
+
+            campoCapa.value = "";
+
+            mensagem.textContent = "Não encontramos uma capa para este livro.";
+            mensagem.className = "text-danger mb-2";
+
+        }
+
+    } catch (erro) {
+
+        console.error(erro);
+
+        mensagem.textContent = "Erro ao buscar a capa.";
+        mensagem.className = "text-danger mb-2";
+
+    } finally {
+
+        botao.disabled = false;
+        botao.innerHTML = '<i class="bi bi-search me-1"></i> Buscar capa';
+    }
+});
+</script>
+
+<script>
+document.getElementById("btnBuscarCategoria").addEventListener("click", async function () {
+
+    const titulo = document.getElementById("titulo").value.trim();
+    const autor = document.getElementById("autor").value.trim();
+
+    const botao = this;
+    const campoCategoria = document.getElementById("categoria");
+    const mensagem = document.getElementById("mensagemCategoria");
+
+    if (!titulo) {
+        alert("Digite o título do livro.");
+        return;
+    }
+
+    botao.disabled = true;
+    botao.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Buscando...';
+
+    mensagem.textContent = "";
+
+    try {
+
+        const resposta = await fetch(
+            `/buscar_categoria?titulo=${encodeURIComponent(titulo)}&autor=${encodeURIComponent(autor)}`
+        );
+
+        const dados = await resposta.json();
+
+        if (dados.categoria) {
+
+            campoCategoria.value = dados.categoria;
+
+            mensagem.textContent = "Categoria encontrada!";
+            mensagem.className = "text-success small mt-1";
+
+        } else {
+
+            campoCategoria.value = "";
+
+            mensagem.textContent = "Não encontramos uma categoria.";
+            mensagem.className = "text-danger small mt-1";
+        }
+
+    } catch (erro) {
+
+        console.error(erro);
+
+        mensagem.textContent = "Erro ao buscar a categoria.";
+        mensagem.className = "text-danger small mt-1";
+
+    } finally {
+
+        botao.disabled = false;
+        botao.innerHTML = '<i class="bi bi-search me-1"></i> Buscar';
+    }
+});
+</script>
+
+{% endblock %}
