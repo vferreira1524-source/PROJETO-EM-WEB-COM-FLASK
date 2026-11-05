@@ -24,6 +24,29 @@ from database import (
 )
 
 app = Flask(__name__)
+import os
+
+print("PASTA RAIZ:", app.root_path)
+print("PASTA TEMPLATES:", app.template_folder)
+print(
+    "ARQUIVO ENCONTRADO:",
+    os.path.isfile(
+        os.path.join(
+            app.root_path,
+            "templates",
+            "admin",
+            "listar_emprestimos.html"
+        )
+    )
+)
+
+from pathlib import Path
+
+print("\n--- PROCURANDO TEMPLATE ---")
+
+for arquivo in Path(app.root_path).rglob("*emprestimos*"):
+    print("ENCONTRADO:", arquivo)
+    
 app.secret_key = os.environ.get(
     "SECRET_KEY",
     "chave-secreta-biblioteca-troque-em-producao"
