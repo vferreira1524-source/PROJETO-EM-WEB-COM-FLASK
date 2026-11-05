@@ -1,190 +1,365 @@
+
 {% extends 'admin/base.html' %}
+
 {% block title %}Livros | ETEBookHub{% endblock %}
+
 {% block content %}
+
 <div class="page-heading d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-  <div><h1>Acervo de livros</h1><p>Pesquise, edite, empreste ou devolva livros.</p></div>
-  <a href="{{ url_for('cadastrarLivro') }}" class="btn btn-primary px-4"><i class="bi bi-plus-lg me-1"></i>Novo livro</a>
+    <div>
+        <h1>Acervo de livros</h1>
+        <p>Pesquise, edite, empreste ou devolva livros.</p>
+    </div>
+
+    <a href="{{ url_for('cadastrarLivro') }}" class="btn btn-primary px-4">
+        <i class="bi bi-plus-lg me-1"></i> Novo livro
+    </a>
 </div>
+
 <div class="card">
-  <div class="card-body">
-    <form method="GET" class="row g-2 mb-4">
-      <div class="col-lg-7"><div class="search-box"><i class="bi bi-search"></i><input type="text" name="busca" class="form-control" placeholder="Buscar por título ou autor..." value="{{ busca }}"></div></div>
-      <div class="col-auto"><button type="submit" class="btn btn-primary px-4">Buscar</button></div>
-      {% if busca %}<div class="col-auto"><a href="{{ url_for('listarLivros') }}" class="btn btn-light border">Limpar</a></div>{% endif %}
-    </form>
-    <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
+    <div class="card-body">
 
-       <thead>
-    <tr>
-        <th>#</th>
-        <th>Capa</th>
-        <th>Título</th>
-        <th>Autor</th>
-        <th>Categoria</th>
-        <th>Status</th>
-        <th class="text-end">Ações</th>
-    </tr>
-</thead>
-        
-<tbody>
-
-{% for livro in livros %}
-
-<tr>
-
-    <!-- ID -->
-    <th class="text-muted">
-        {{ livro['id'] }}
-    </th>
-
-    <!-- CAPA -->
-    <td>
-        {% if livro['img'] %}
-
-            <img
-                src="{{ livro['img'] }}"
-                alt="Capa de {{ livro['titulo'] }}"
-                style="
-                    width: 55px;
-                    height: 80px;
-                    object-fit: cover;
-                    border-radius: 6px;
-                    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-                "
-            >
-
-        {% else %}
-
-            <div
-                style="
-                    width: 55px;
-                    height: 80px;
-                    border-radius: 6px;
-                    background: #f1f3f5;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: #6c757d;
-                "
-                title="Sem capa"
-            >
-                <i class="bi bi-book"></i>
+        <!-- BUSCA -->
+        <form method="GET" class="row g-2 mb-4">
+            <div class="col-lg-7">
+                <div class="search-box">
+                    <i class="bi bi-search"></i>
+                    <input
+                        type="text"
+                        name="busca"
+                        class="form-control"
+                        placeholder="Buscar por título ou autor..."
+                        value="{{ busca }}"
+                    >
+                </div>
             </div>
 
-        {% endif %}
-    </td>
-
-    <!-- TÍTULO -->
-    <td class="fw-semibold">
-        {{ livro['titulo'] }}
-    </td>
-
-    <!-- AUTOR -->
-    <td>
-        {{ livro['autor'] }}
-    </td>
-
-    <!-- CATEGORIA -->
-    <td class="text-muted">
-        {{ livro['categoria'] or '—' }}
-    </td>
-
-    <!-- STATUS -->
-    <td>
-        {% if livro['status'] == 'disponivel' %}
-
-            <span class="badge-soft badge-available">
-                Disponível
-            </span>
-
-        {% else %}
-
-            <span class="badge-soft badge-loaned">
-                Emprestado
-            </span>
-
-        {% endif %}
-    </td>
-
-    <!-- AÇÕES -->
-    <td class="text-end">
-
-        <div class="d-flex justify-content-end gap-1">
-
-            <!-- EDITAR -->
-            <a
-                href="{{ url_for('editarLivro', id_livro=livro['id']) }}"
-                class="btn btn-light border action-btn"
-                title="Editar"
-            >
-                <i class="bi bi-pencil"></i>
-            </a>
-
-            <!-- EMPRESTAR / DEVOLVER -->
-            {% if livro['status'] == 'disponivel' %}
-
-                <form
-                    action="{{ url_for('emprestarLivro', id_livro=livro['id']) }}"
-                    method="POST"
-                >
-                    <button
-                        class="btn btn-outline-primary action-btn"
-                        title="Emprestar"
-                    >
-                        <i class="bi bi-arrow-up-right"></i>
-                    </button>
-                </form>
-
-            {% else %}
-
-                <form
-                    action="{{ url_for('devolverLivro', id_livro=livro['id']) }}"
-                    method="POST"
-                >
-                    <button
-                        class="btn btn-outline-success action-btn"
-                        title="Devolver"
-                    >
-                        <i class="bi bi-arrow-down-left"></i>
-                    </button>
-                </form>
-
-            {% endif %}
-
-            <!-- REMOVER -->
-            <form
-                action="{{ url_for('removerLivro', id_livro=livro['id']) }}"
-                method="POST"
-                onsubmit="return confirm('Remover este livro do acervo?');"
-            >
-                <button
-                    class="btn btn-light border text-danger action-btn"
-                    title="Remover"
-                >
-                    <i class="bi bi-trash"></i>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary px-4">
+                    Buscar
                 </button>
+            </div>
+
+            {% if busca %}
+            <div class="col-auto">
+                <a href="{{ url_for('listarLivros') }}" class="btn btn-light border">
+                    Limpar
+                </a>
+            </div>
+            {% endif %}
+        </form>
+
+        <!-- TABELA -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Capa</th>
+                        <th>Título</th>
+                        <th>Autor</th>
+                        <th>Categoria</th>
+                        <th>Status</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for livro in livros %}
+
+                    <tr>
+                        <th class="text-muted">
+                            {{ livro['id'] }}
+                        </th>
+
+                        <!-- CAPA -->
+                        <td>
+                            {% if livro['img'] %}
+                                <img
+                                    src="{{ livro['img'] }}"
+                                    alt="Capa de {{ livro['titulo'] }}"
+                                    style="width:55px;height:80px;object-fit:cover;border-radius:6px;"
+                                >
+                            {% else %}
+                                <div style="width:55px;height:80px;border-radius:6px;background:#f1f3f5;display:flex;align-items:center;justify-content:center;color:#6c757d;">
+                                    <i class="bi bi-book"></i>
+                                </div>
+                            {% endif %}
+                        </td>
+
+                        <td class="fw-semibold">
+                            {{ livro['titulo'] }}
+                        </td>
+
+                        <td>{{ livro['autor'] }}</td>
+
+                        <td class="text-muted">
+                            {{ livro['categoria'] or '—' }}
+                        </td>
+
+                        <!-- STATUS -->
+                        <td>
+                            {% if livro['status'] == 'disponivel' %}
+                                <span class="badge-soft badge-available">
+                                    Disponível
+                                </span>
+                            {% else %}
+                                <span class="badge-soft badge-loaned">
+                                    Emprestado
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- AÇÕES -->
+                        <td class="text-end">
+                            <div class="d-flex justify-content-end gap-1">
+
+                                <!-- EDITAR -->
+                                <a
+                                    href="{{ url_for('editarLivro', id_livro=livro['id']) }}"
+                                    class="btn btn-light border action-btn"
+                                    title="Editar"
+                                >
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+
+                                <!-- EMPRESTAR -->
+                                {% if livro['status'] == 'disponivel' %}
+
+                                    <button
+                                        type="button"
+                                        class="btn btn-outline-primary action-btn"
+                                        title="Emprestar"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#modalEmprestimo"
+                                        data-livro-id="{{ livro['id'] }}"
+                                        data-livro-titulo="{{ livro['titulo'] }}"
+                                    >
+                                        <i class="bi bi-arrow-up-right"></i>
+                                    </button>
+
+                                {% else %}
+
+                                    <!-- DEVOLVER -->
+                                    <form
+                                        action="{{ url_for('devolverLivro', id_livro=livro['id']) }}"
+                                        method="POST"
+                                        onsubmit="return confirm('Confirmar a devolução deste livro?');"
+                                    >
+                                        <button
+                                            type="submit"
+                                            class="btn btn-outline-success action-btn"
+                                            title="Devolver"
+                                        >
+                                            <i class="bi bi-arrow-down-left"></i>
+                                        </button>
+                                    </form>
+
+                                {% endif %}
+
+                                <!-- REMOVER -->
+                                <form
+                                    action="{{ url_for('removerLivro', id_livro=livro['id']) }}"
+                                    method="POST"
+                                    onsubmit="return confirm('Remover este livro do acervo?');"
+                                >
+                                    <button
+                                        type="submit"
+                                        class="btn btn-light border text-danger action-btn"
+                                        title="Remover"
+                                    >
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+
+                            </div>
+                        </td>
+                    </tr>
+
+                    {% else %}
+
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-5">
+                            Nenhum livro encontrado.
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+<!-- MODAL DE EMPRÉSTIMO -->
+<div class="modal fade" id="modalEmprestimo" tabindex="-1" aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content">
+
+            <form id="formEmprestimo" method="POST">
+
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title">
+                            <i class="bi bi-journal-arrow-up me-2"></i>
+                            Registrar empréstimo
+                        </h5>
+                        <small class="text-muted">
+                            Preencha os dados do aluno.
+                        </small>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Fechar"
+                    ></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <!-- LIVRO SELECIONADO -->
+                    <div class="alert alert-light border mb-3">
+                        <small class="text-muted">Livro selecionado</small>
+                        <div class="fw-semibold" id="nomeLivroModal">
+                            Livro
+                        </div>
+                    </div>
+
+                    <!-- NOME -->
+                    <div class="mb-3">
+                        <label class="form-label" for="nome_aluno">
+                            Nome do aluno *
+                        </label>
+
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="nome_aluno"
+                            name="nome_aluno"
+                            placeholder="Nome completo do aluno"
+                            maxlength="120"
+                            required
+                        >
+                    </div>
+
+                    <!-- SÉRIE -->
+                    <div class="mb-3">
+                        <label class="form-label" for="serie">
+                            Série *
+                        </label>
+
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="serie"
+                            name="serie"
+                            placeholder="Ex.: 2º ano - Desenvolvimento de Sistemas"
+                            maxlength="60"
+                            required
+                        >
+                    </div>
+
+                    <!-- PRAZO -->
+                    <div class="mb-3">
+                        <label class="form-label" for="prazo">
+                            Prazo de devolução *
+                        </label>
+
+                        <input
+                            type="date"
+                            class="form-control"
+                            id="prazo"
+                            name="prazo"
+                            required
+                        >
+                    </div>
+
+                    <!-- OBSERVAÇÕES -->
+                    <div class="mb-2">
+                        <label class="form-label" for="observacoes">
+                            Observações
+                        </label>
+
+                        <textarea
+                            class="form-control"
+                            id="observacoes"
+                            name="observacoes"
+                            rows="3"
+                            placeholder="Informações adicionais sobre o empréstimo..."
+                        ></textarea>
+                    </div>
+
+                    <small class="text-muted">
+                        * Campos obrigatórios.
+                    </small>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="btn btn-light border"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i>
+                        Confirmar empréstimo
+                    </button>
+
+                </div>
+
             </form>
 
         </div>
-
-    </td>
-
-</tr>
-
-{% else %}
-
-<tr>
-    <td colspan="7" class="text-center text-muted py-5">
-        Nenhum livro encontrado.
-    </td>
-</tr>
-
-{% endfor %}
-
-</tbody>
-</table>
+    </div>
 </div>
-</div>
-</div>
+
+
+<!-- JAVASCRIPT DO MODAL -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const modal = document.getElementById("modalEmprestimo");
+    const formulario = document.getElementById("formEmprestimo");
+    const nomeLivro = document.getElementById("nomeLivroModal");
+    const campoPrazo = document.getElementById("prazo");
+
+    // Impede selecionar datas anteriores a hoje
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+    const dia = String(hoje.getDate()).padStart(2, "0");
+
+    campoPrazo.min = `${ano}-${mes}-${dia}`;
+
+    // Identifica o livro selecionado
+    modal.addEventListener("show.bs.modal", function (event) {
+
+        const botao = event.relatedTarget;
+
+        const idLivro = botao.getAttribute("data-livro-id");
+        const tituloLivro = botao.getAttribute("data-livro-titulo");
+
+        formulario.action = `/emprestar/${idLivro}`;
+        nomeLivro.textContent = tituloLivro;
+
+        formulario.reset();
+        campoPrazo.min = `${ano}-${mes}-${dia}`;
+    });
+
+});
+</script>
+
 {% endblock %}

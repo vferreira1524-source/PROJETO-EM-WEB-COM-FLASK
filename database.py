@@ -112,26 +112,73 @@ def editar_livro(id_livro, titulo, autor, categoria):
     conn.close()
 
 
-def emprestar_livro(id_livro, id_usuario):
-    conn = conexao()
-    livro = conn.execute(
-        "SELECT status FROM livro WHERE id = ?", (id_livro,)
-    ).fetchone()
-    if livro is None or livro["status"] != "disponivel":
-        conn.close()
-        return False
 
-    conn.execute(
-        "UPDATE livro SET status = 'emprestado' WHERE id = ?", (id_livro,)
-    )
-    conn.execute(
-        """INSERT INTO emprestimo (id_livro, id_usuario, data_emprestimo)
-           VALUES (?, ?, ?)""",
-        (id_livro, id_usuario, datetime.now().strftime("%Y-%m-%d %H:%M")),
-    )
-    conn.commit()
-    conn.close()
-    return True
+def emprestar_livro(
+    id_livro,
+    id_usuario,
+    nome_aluno,
+    serie,
+    prazo,
+    observacoes=""
+):
+    conn = conexao()
+
+    try:
+        # Verifica se o livro está disponível
+        livro = conn.execute(
+            "SELECT status FROM livro WHERE id = ?",
+            (id_livro,)
+        ).fetchone()
+
+        if livro is None or livro["status"] != "disponivel":
+            return False
+
+        # Atualiza o status do livro
+        cursor = conn.execute(
+            """UPDATE livro
+               SET status = 'emprestado'
+               WHERE id = ? AND status = 'disponivel'""",
+            (id_livro,)
+        )
+
+        if cursor.rowcount == 0:
+            conn.rollback()
+            return False
+
+        # Registra os dados do empréstimo
+        conn.execute(
+            """
+            INSERT INTO emprestimo (
+                id_livro,
+                id_usuario,
+                data_emprestimo,
+                nome_aluno,
+                serie,
+                prazo,
+                observacoes
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                id_livro,
+                id_usuario,
+                datetime.now().strftime("%Y-%m-%d %H:%M"),
+                nome_aluno,
+                serie,
+                prazo,
+                observacoes
+            )
+        )
+
+        conn.commit()
+        return True
+
+    except sqlite3.Error:
+        conn.rollback()
+        raise
+
+    finally:
+        conn.close()
 
 
 def devolver_livro(id_livro):
@@ -174,3 +221,123 @@ def reiniciar_id_livros():
 
     conn.commit()
     conn.close()
+def buscar_usuario_por_id(id_usuario):
+    conn = conexao()
+
+    usuario = conn.execute(
+        """
+        SELECT *
+        FROM usuario
+        WHERE id = ? AND ativo = 1
+        """,
+        (id_usuario,)
+    ).fetchone()
+
+    conn.close()
+    return usuario
+
+
+def listar_emprestimos():
+    conn = conexao()
+
+    emprestimos = conn.execute(
+        """
+        SELECT
+            e.id AS id_emprestimo,
+            e.id_livro,
+            e.id_usuario,
+            e.nome_aluno,
+            e.serie,
+            e.data_emprestimo,
+            e.data_devolucao,
+            e.prazo,
+            e.observacoes,
+            e.prazo_alterado_em,
+            l.titulo AS titulo_livro,
+            l.autor AS autor_livro
+        FROM emprestimo e
+        INNER JOIN livro l ON l.id = e.id_livro
+        ORDER BY e.id DESC
+        """
+    ).fetchall()
+
+    conn.close()
+    return emprestimos
+
+
+def editar_emprestimo(
+    id_emprestimo,
+    nome_aluno,
+    serie,
+    prazo,
+    observacoes,
+    id_usuario
+):
+    conn = conexao()
+
+    try:
+        emprestimo = conn.execute(
+            """
+            SELECT prazo
+            FROM emprestimo
+            WHERE id = ? AND data_devolucao IS NULL
+            """,
+            (id_emprestimo,)
+        ).fetchone()
+
+        if emprestimo is None:
+            return False
+
+        # Verifica se o prazo realmente foi alterado
+        prazo_alterado = emprestimo["prazo"] != prazo
+
+        if prazo_alterado:
+            conn.execute(
+                """
+                UPDATE emprestimo
+                SET
+                    nome_aluno = ?,
+                    serie = ?,
+                    prazo = ?,
+                    observacoes = ?,
+                    prazo_alterado_em = ?,
+                    prazo_alterado_por = ?
+                WHERE id = ? AND data_devolucao IS NULL
+                """,
+                (
+                    nome_aluno,
+                    serie,
+                    prazo,
+                    observacoes,
+                    datetime.now().strftime("%Y-%m-%d %H:%M"),
+                    id_usuario,
+                    id_emprestimo
+                )
+            )
+        else:
+            conn.execute(
+                """
+                UPDATE emprestimo
+                SET
+                    nome_aluno = ?,
+                    serie = ?,
+                    observacoes = ?
+                WHERE id = ? AND data_devolucao IS NULL
+                """,
+                (
+                    nome_aluno,
+                    serie,
+                    observacoes,
+                    id_emprestimo
+                )
+            )
+
+        conn.commit()
+        return True
+
+    except sqlite3.Error:
+        conn.rollback()
+        raise
+
+    finally:
+        conn.close()

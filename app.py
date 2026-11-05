@@ -1,4 +1,6 @@
+
 import os
+from datetime import datetime
 from functools import wraps
 
 from flask import Flask, flash, redirect, render_template, request, session, url_for
@@ -8,18 +10,24 @@ from google_books import buscar_dados_livro
 from database import (
     buscar_livro,
     buscar_usuario,
+    buscar_usuario_por_id,
     cadastrar_livro,
     cadastrar_usuario,
     contar_status,
     devolver_livro,
     editar_livro,
+    editar_emprestimo,
     emprestar_livro,
+    listar_emprestimos,
     listar_livros,
     remover_livro,
 )
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "chave-secreta-biblioteca-troque-em-producao")
+app.secret_key = os.environ.get(
+    "SECRET_KEY",
+    "chave-secreta-biblioteca-troque-em-producao"
+)
 
 
 def login_required(view):
@@ -28,6 +36,7 @@ def login_required(view):
         if session.get("usuario_id") is None:
             flash("Entre com sua conta para acessar o acervo.", "warning")
             return redirect(url_for("login"))
+
         return view(*args, **kwargs)
 
     return wrapped_view
@@ -43,13 +52,19 @@ def login():
         senha = request.form.get("senha", "")
         usuario = buscar_usuario(usuario_login)
 
-        if usuario is None or not check_password_hash(usuario["senha_hash"], senha):
+        if usuario is None or not check_password_hash(
+            usuario["senha_hash"], senha
+        ):
             flash("Usuário ou senha inválidos.", "danger")
-            return render_template("admin/login.html", usuario=usuario_login)
+            return render_template(
+                "admin/login.html",
+                usuario=usuario_login
+            )
 
         session.clear()
         session["usuario_id"] = usuario["id"]
         session["usuario_nome"] = usuario["nome"]
+
         flash("Login realizado com sucesso.", "success")
         return redirect(url_for("index"))
 
@@ -68,6 +83,7 @@ def logout():
 @login_required
 def index():
     total, disponiveis, emprestados = contar_status()
+
     return render_template(
         "admin/index.html",
         total=total,
@@ -76,7 +92,11 @@ def index():
     )
 
 
-@app.route("/cadastro_usuario", methods=["GET", "POST"], endpoint="cadastro_usuario")
+@app.route(
+    "/cadastro_usuario",
+    methods=["GET", "POST"],
+    endpoint="cadastro_usuario"
+)
 def cadastroUsuario():
     if request.method == "POST":
         nome = request.form.get("nome", "").strip()
@@ -97,8 +117,12 @@ def cadastroUsuario():
             return render_template("admin/cadastro_usuario_login.html")
 
         _, erro = cadastrar_usuario(nome, login_usuario, senha)
+
         if erro == "login_existente":
-            flash("Esse nome de usuário já está cadastrado. Escolha outro.", "warning")
+            flash(
+                "Esse nome de usuário já está cadastrado. Escolha outro.",
+                "warning"
+            )
             return render_template("admin/cadastro_usuario_login.html")
 
         flash(f'Usuário "{nome}" cadastrado com sucesso.', "success")
@@ -119,17 +143,24 @@ def cadastrarUsuarioAdmin():
         if not nome or not login_usuario or not senha:
             flash("Preencha nome, usuário e senha.", "danger")
             return render_template("admin/cadastrar_usuario.html")
+
         if len(senha) < 6:
             flash("A senha deve ter pelo menos 6 caracteres.", "danger")
             return render_template("admin/cadastrar_usuario.html")
+
         if senha != confirmar_senha:
             flash("As senhas não conferem.", "danger")
             return render_template("admin/cadastrar_usuario.html")
 
         _, erro = cadastrar_usuario(nome, login_usuario, senha)
+
         if erro == "login_existente":
-            flash("Esse nome de usuário já está cadastrado. Escolha outro.", "warning")
+            flash(
+                "Esse nome de usuário já está cadastrado. Escolha outro.",
+                "warning"
+            )
             return render_template("admin/cadastrar_usuario.html")
+
         flash(f'Usuário "{nome}" cadastrado com sucesso.', "success")
         return redirect(url_for("index"))
 
@@ -141,7 +172,97 @@ def cadastrarUsuarioAdmin():
 def listarLivros():
     busca = request.args.get("busca", "").strip()
     livros = listar_livros(busca if busca else None)
-    return render_template("admin/listar_livros.html", livros=livros, busca=busca)
+
+    return render_template(
+        "admin/listar_livros.html",
+        livros=livros,
+        busca=busca
+    )
+
+@app.route("/emprestimos")
+@login_required
+def listarEmprestimos():
+    emprestimos = listar_emprestimos()
+
+    return render_template(
+        "admin/listar_emprestimos.html",
+        emprestimos=emprestimos
+    )
+
+@app.route(
+    "/editar_emprestimo/<int:id_emprestimo>",
+    methods=["POST"]
+)
+@login_required
+def editarEmprestimo(id_emprestimo):
+
+    nome_aluno = request.form.get("nome_aluno", "").strip()
+    serie = request.form.get("serie", "").strip()
+    prazo = request.form.get("prazo", "").strip()
+    observacoes = request.form.get("observacoes", "").strip()
+    senha_admin = request.form.get("senha_admin", "")
+
+    if not nome_aluno or not serie or not prazo:
+        flash("Preencha nome do aluno, série e prazo.", "danger")
+        return redirect(url_for("listarEmprestimos"))
+
+    # Localiza o empréstimo atual
+    emprestimos = listar_emprestimos()
+
+    emprestimo = next(
+        (
+            item for item in emprestimos
+            if item["id_emprestimo"] == id_emprestimo
+        ),
+        None
+    )
+
+    if emprestimo is None or emprestimo["data_devolucao"] is not None:
+        flash("Empréstimo não encontrado ou já devolvido.", "danger")
+        return redirect(url_for("listarEmprestimos"))
+
+    # Verifica se o prazo foi alterado
+    prazo_alterado = emprestimo["prazo"] != prazo
+
+    if prazo_alterado:
+        usuario = buscar_usuario_por_id(session["usuario_id"])
+
+        if (
+            usuario is None
+            or not senha_admin
+            or not check_password_hash(usuario["senha_hash"], senha_admin)
+        ):
+            flash("Senha do administrador incorreta.", "danger")
+            return redirect(url_for("listarEmprestimos"))
+
+    # Validação da data
+    try:
+        data_prazo = datetime.strptime(prazo, "%Y-%m-%d").date()
+
+        if data_prazo < datetime.today().date():
+            flash("O prazo não pode ser uma data passada.", "danger")
+            return redirect(url_for("listarEmprestimos"))
+
+    except ValueError:
+        flash("Informe uma data válida.", "danger")
+        return redirect(url_for("listarEmprestimos"))
+
+    # Salva as alterações
+    resultado = editar_emprestimo(
+        id_emprestimo,
+        nome_aluno,
+        serie,
+        prazo,
+        observacoes,
+        session["usuario_id"]
+    )
+
+    if resultado:
+        flash("Empréstimo atualizado com sucesso!", "success")
+    else:
+        flash("Não foi possível atualizar o empréstimo.", "danger")
+
+    return redirect(url_for("listarEmprestimos"))
 
 
 @app.route("/cadastrar_livro", methods=["GET", "POST"])
@@ -154,7 +275,7 @@ def cadastrarLivro():
         img = request.form.get("img", "").strip()
 
         if titulo and autor:
-            cadastrar_livro(titulo, autor, categoria,img)
+            cadastrar_livro(titulo, autor, categoria, img)
             flash(f'"{titulo}" foi cadastrado no acervo.', "success")
             return redirect(url_for("listarLivros"))
 
@@ -167,6 +288,7 @@ def cadastrarLivro():
 @login_required
 def editarLivro(id_livro):
     livro = buscar_livro(id_livro)
+
     if livro is None:
         flash("Livro não encontrado.", "danger")
         return redirect(url_for("listarLivros"))
@@ -189,10 +311,44 @@ def editarLivro(id_livro):
 @app.route("/emprestar/<int:id_livro>", methods=["POST"])
 @login_required
 def emprestarLivro(id_livro):
-    if emprestar_livro(id_livro, session["usuario_id"]):
-        flash("Livro emprestado com sucesso.", "success")
+    nome_aluno = request.form.get("nome_aluno", "").strip()
+    serie = request.form.get("serie", "").strip()
+    prazo = request.form.get("prazo", "").strip()
+    observacoes = request.form.get("observacoes", "").strip()
+
+    if not nome_aluno or not serie or not prazo:
+        flash("Preencha nome do aluno, série e prazo.", "danger")
+        return redirect(url_for("listarLivros"))
+
+    try:
+        data_prazo = datetime.strptime(prazo, "%Y-%m-%d").date()
+
+        if data_prazo < datetime.today().date():
+            flash("O prazo não pode ser uma data passada.", "danger")
+            return redirect(url_for("listarLivros"))
+
+    except ValueError:
+        flash("Informe uma data de prazo válida.", "danger")
+        return redirect(url_for("listarLivros"))
+
+    if emprestar_livro(
+        id_livro,
+        session["usuario_id"],
+        nome_aluno,
+        serie,
+        prazo,
+        observacoes
+    ):
+        flash(
+            f"Livro emprestado para {nome_aluno} com sucesso!",
+            "success"
+        )
     else:
-        flash("Não foi possível emprestar: o livro está indisponível.", "danger")
+        flash(
+            "Não foi possível emprestar: o livro está indisponível.",
+            "danger"
+        )
+
     return redirect(url_for("listarLivros"))
 
 
@@ -202,7 +358,11 @@ def devolverLivro(id_livro):
     if devolver_livro(id_livro):
         flash("Devolução registrada. Obrigado!", "success")
     else:
-        flash("Não foi possível devolver: o livro já está disponível.", "danger")
+        flash(
+            "Não foi possível devolver: o livro já está disponível.",
+            "danger"
+        )
+
     return redirect(url_for("listarLivros"))
 
 
@@ -213,13 +373,13 @@ def removerLivro(id_livro):
         flash("Livro removido do acervo.", "success")
     else:
         flash("Livro não encontrado.", "danger")
+
     return redirect(url_for("listarLivros"))
 
 
 @app.route("/buscar_dados_livro")
 @login_required
 def buscarDadosLivro():
-
     titulo = request.args.get("titulo", "").strip()
     autor = request.args.get("autor", "").strip()
 
@@ -230,14 +390,8 @@ def buscarDadosLivro():
             "erro": "Informe o título do livro."
         }
 
-    dados = buscar_dados_livro(titulo, autor)
-
-    return dados
-
+    return buscar_dados_livro(titulo, autor)
 
 
 if __name__ == "__main__":
     app.run(debug=True, port=5005)
-
-
-

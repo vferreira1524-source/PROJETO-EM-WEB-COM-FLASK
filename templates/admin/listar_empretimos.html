@@ -1,0 +1,291 @@
+
+{% extends "admin/base.html" %}
+
+{% block title %}Empréstimos | ETEBookHub{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">Empréstimos</h2>
+            <p class="text-muted mb-0">
+                Consulte e gerencie os empréstimos da biblioteca.
+            </p>
+        </div>
+        <a href="{{ url_for('listarLivros') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar ao acervo
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">Histórico de empréstimos</h5>
+        </div>
+
+        <div class="card-body table-responsive">
+
+            <table class="table table-hover align-middle">
+
+                <thead>
+                    <tr>
+                        <th>Livro</th>
+                        <th>Aluno</th>
+                        <th>Série</th>
+                        <th>Empréstimo</th>
+                        <th>Prazo</th>
+                        <th>Situação</th>
+                        <th class="text-center">Ações</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for emprestimo in emprestimos %}
+
+                    <tr>
+                        <td>
+                            <strong>{{ emprestimo['titulo_livro'] }}</strong>
+                            <br>
+                            <small class="text-muted">
+                                {{ emprestimo['autor_livro'] }}
+                            </small>
+                        </td>
+
+                        <td>{{ emprestimo['nome_aluno'] or 'Não informado' }}</td>
+
+                        <td>{{ emprestimo['serie'] or '-' }}</td>
+
+                        <td>{{ emprestimo['data_emprestimo'] }}</td>
+
+                        <td>
+                            {{ emprestimo['prazo'] or '-' }}
+                        </td>
+
+                        <td>
+                            {% if emprestimo['data_devolucao'] %}
+                                <span class="badge bg-success">Devolvido</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Em andamento</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="text-center">
+
+                            {% if not emprestimo['data_devolucao'] %}
+
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-primary"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modalEditar"
+                                data-id="{{ emprestimo['id_emprestimo'] }}"
+                                data-nome="{{ emprestimo['nome_aluno'] or '' }}"
+                                data-serie="{{ emprestimo['serie'] or '' }}"
+                                data-prazo="{{ emprestimo['prazo'] or '' }}"
+                                data-observacoes="{{ emprestimo['observacoes'] or '' }}"
+                            >
+                                <i class="bi bi-pencil-square"></i>
+                                Editar
+                            </button>
+
+                            {% else %}
+
+                            <span class="text-muted small">Indisponível</span>
+
+                            {% endif %}
+
+                        </td>
+                    </tr>
+
+                    {% else %}
+
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            Nenhum empréstimo registrado.
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+    </div>
+
+</div>
+
+
+<!-- MODAL DE EDIÇÃO -->
+
+<div class="modal fade" id="modalEditar" tabindex="-1">
+
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+
+        <div class="modal-content">
+
+            <form id="formEditar" method="POST">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-pencil-square me-2"></i>
+                        Editar empréstimo
+                    </h5>
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal">
+                    </button>
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="row">
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nome do aluno</label>
+                            <input
+                                type="text"
+                                name="nome_aluno"
+                                id="editNome"
+                                class="form-control"
+                                required
+                            >
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Série</label>
+                            <input
+                                type="text"
+                                name="serie"
+                                id="editSerie"
+                                class="form-control"
+                                required
+                            >
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Prazo de devolução</label>
+                            <input
+                                type="date"
+                                name="prazo"
+                                id="editPrazo"
+                                class="form-control"
+                                required
+                            >
+                        </div>
+
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Observações</label>
+                            <textarea
+                                name="observacoes"
+                                id="editObservacoes"
+                                class="form-control"
+                                rows="3"
+                            ></textarea>
+                        </div>
+
+                        <div class="col-12" id="areaSenha" hidden>
+                            <div class="alert alert-warning">
+                                <i class="bi bi-shield-lock me-1"></i>
+                                Você alterou o prazo de devolução.
+                                Confirme sua senha para continuar.
+                            </div>
+
+                            <label class="form-label">Senha do administrador</label>
+                            <input
+                                type="password"
+                                name="senha_admin"
+                                id="editSenha"
+                                class="form-control"
+                                autocomplete="current-password"
+                            >
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-1"></i>
+                        Salvar alterações
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const modal = document.getElementById("modalEditar");
+    const formulario = document.getElementById("formEditar");
+
+    const nome = document.getElementById("editNome");
+    const serie = document.getElementById("editSerie");
+    const prazo = document.getElementById("editPrazo");
+    const observacoes = document.getElementById("editObservacoes");
+
+    const areaSenha = document.getElementById("areaSenha");
+    const senha = document.getElementById("editSenha");
+
+    let prazoOriginal = "";
+
+    modal.addEventListener("show.bs.modal", function (event) {
+
+        const botao = event.relatedTarget;
+
+        const id = botao.dataset.id;
+
+        formulario.action = `/editar_emprestimo/${id}`;
+
+        nome.value = botao.dataset.nome;
+        serie.value = botao.dataset.serie;
+        prazo.value = botao.dataset.prazo;
+        observacoes.value = botao.dataset.observacoes;
+
+        prazoOriginal = botao.dataset.prazo;
+
+        senha.value = "";
+        senha.required = false;
+        areaSenha.hidden = true;
+
+    });
+
+    prazo.addEventListener("change", function () {
+
+        const alterouPrazo = prazo.value !== prazoOriginal;
+
+        areaSenha.hidden = !alterouPrazo;
+        senha.required = alterouPrazo;
+
+        if (!alterouPrazo) {
+            senha.value = "";
+        }
+
+    });
+
+});
+</script>
+
+{% endblock %}
