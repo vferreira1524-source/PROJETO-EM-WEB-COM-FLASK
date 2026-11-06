@@ -3,12 +3,32 @@ from datetime import datetime
 
 from werkzeug.security import generate_password_hash
 
+def formatar_data(data):
+    if not data:
+        return "-"
+
+    texto = str(data).strip()
+
+    try:
+        data_convertida = datetime.fromisoformat(texto)
+        return data_convertida.strftime("%d-%m-%Y")
+
+    except ValueError:
+        try:
+            data_convertida = datetime.strptime(
+                texto, "%d-%m-%Y"
+            )
+
+            return data_convertida.strftime("%d-%m-%Y")
+
+        except ValueError:
+            return texto
+    
 
 def conexao():
     conn = sqlite3.connect("biblioteca.db")
     conn.row_factory = sqlite3.Row
     return conn
-
 
 def buscar_usuario(login):
     conn = conexao()
@@ -86,6 +106,150 @@ def contar_status():
     ).fetchone()[0]
     conn.close()
     return total, disponiveis, emprestados
+
+
+
+def obter_dados_dashboard():
+    conn = conexao()
+
+    try:
+        # 1. Empréstimos atrasados e ainda não devolvidos
+        atrasados = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM emprestimo
+            WHERE (data_devolucao IS NULL OR TRIM(data_devolucao) = '')
+              AND date(prazo) IS NOT NULL
+              AND date(prazo) < date('now', 'localtime')
+            """
+        ).fetchone()[0]
+
+        # 2. Usuários ativos
+        usuarios = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM usuario
+            WHERE ativo = 1
+            """
+        ).fetchone()[0]
+
+        # 3. Preparar os últimos seis meses
+        hoje = datetime.now()
+
+        nomes_meses = [
+            "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+            "Jul", "Ago", "Set", "Out", "Nov", "Dez"
+        ]
+
+        meses = []
+
+        for deslocamento in range(5, -1, -1):
+
+            indice = hoje.year * 12 + hoje.month - 1 - deslocamento
+
+            ano, mes_zero = divmod(indice, 12)
+            mes = mes_zero + 1
+
+            chave = f"{ano:04d}-{mes:02d}"
+
+            meses.append({
+                "chave": chave,
+                "mes": f"{nomes_meses[mes_zero]}/{str(ano)[2:]}",
+                "quantidade": 0
+            })
+
+        # 4. Buscar empréstimos realizados nesses meses
+        primeiro_mes = meses[0]["chave"]
+        ultimo_mes = meses[-1]["chave"]
+
+        movimentacoes = conn.execute(
+            """
+            SELECT
+                substr(data_emprestimo, 1, 7) AS mes,
+                COUNT(*) AS quantidade
+            FROM emprestimo
+            WHERE substr(data_emprestimo, 1, 7) BETWEEN ? AND ?
+            GROUP BY substr(data_emprestimo, 1, 7)
+            """,
+            (primeiro_mes, ultimo_mes)
+        ).fetchall()
+
+        quantidade_por_mes = {
+            item["mes"]: item["quantidade"]
+            for item in movimentacoes
+        }
+
+        emprestimos_mensais = []
+
+        for item in meses:
+            emprestimos_mensais.append({
+                "mes": item["mes"],
+                "quantidade": quantidade_por_mes.get(
+                    item["chave"], 0
+                )
+            })
+
+        # 5. Últimos cinco empréstimos realizados
+        recentes = conn.execute(
+            """
+            SELECT
+                e.id,
+                e.nome_aluno,
+                e.serie,
+                e.data_emprestimo,
+                e.data_devolucao,
+                e.prazo,
+                l.titulo AS titulo_livro
+            FROM emprestimo e
+            INNER JOIN livro l ON l.id = e.id_livro
+            ORDER BY e.id DESC
+            LIMIT 5
+            """
+        ).fetchall()
+
+        # 6. Cinco livros mais emprestados
+        mais_emprestados = conn.execute(
+            """
+            SELECT
+                l.titulo,
+                COUNT(e.id) AS quantidade
+            FROM emprestimo e
+            INNER JOIN livro l ON l.id = e.id_livro
+            GROUP BY l.id, l.titulo
+            ORDER BY quantidade DESC, l.titulo ASC
+            LIMIT 5
+            """
+        ).fetchall()
+
+        # 7. Quantidade de livros por categoria
+        categorias = conn.execute(
+            """
+            SELECT
+                COALESCE(
+                    NULLIF(TRIM(categoria), ''),
+                    'Sem categoria'
+                ) AS categoria,
+                COUNT(*) AS quantidade
+            FROM livro
+            GROUP BY COALESCE(
+                NULLIF(TRIM(categoria), ''),
+                'Sem categoria'
+            )
+            ORDER BY quantidade DESC
+            """
+        ).fetchall()
+
+        return {
+            "atrasados": atrasados,
+            "usuarios": usuarios,
+            "emprestimos_mensais": emprestimos_mensais,
+            "recentes": recentes,
+            "mais_emprestados": mais_emprestados,
+            "categorias": [dict(item) for item in categorias]
+        }
+
+    finally:
+        conn.close()
 
 
 def cadastrar_livro(titulo, autor, categoria, img=None):
@@ -334,6 +498,69 @@ def editar_emprestimo(
 
         conn.commit()
         return True
+
+    except sqlite3.Error:
+        conn.rollback()
+        raise
+
+    finally:
+        conn.close()
+
+
+def listar_usuarios():
+    conn = conexao()
+
+    usuarios = conn.execute(
+        """
+        SELECT id, nome, login
+        FROM usuario
+        WHERE ativo = 1
+        ORDER BY nome ASC
+        """
+    ).fetchall()
+
+    conn.close()
+    return usuarios
+
+
+def editar_usuario(id_usuario, nome, login, senha=None):
+    conn = conexao()
+
+    try:
+        if senha:
+            conn.execute(
+                """
+                UPDATE usuario
+                SET nome = ?, login = ?, senha_hash = ?
+                WHERE id = ? AND ativo = 1
+                """,
+                (
+                    nome,
+                    login,
+                    generate_password_hash(senha),
+                    id_usuario
+                )
+            )
+        else:
+            conn.execute(
+                """
+                UPDATE usuario
+                SET nome = ?, login = ?
+                WHERE id = ? AND ativo = 1
+                """,
+                (nome, login, id_usuario)
+            )
+
+        if conn.total_changes == 0:
+            conn.rollback()
+            return False, "usuario_nao_encontrado"
+
+        conn.commit()
+        return True, None
+
+    except sqlite3.IntegrityError:
+        conn.rollback()
+        return False, "login_existente"
 
     except sqlite3.Error:
         conn.rollback()

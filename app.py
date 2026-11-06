@@ -21,9 +21,18 @@ from database import (
     listar_emprestimos,
     listar_livros,
     remover_livro,
+    editar_usuario,
+    listar_usuarios,
+    obter_dados_dashboard,
+    formatar_data,
+
+
 )
 
 app = Flask(__name__)
+
+app.jinja_env.filters["data_br"] = formatar_data
+
 import os
 
 print("PASTA RAIZ:", app.root_path)
@@ -102,24 +111,37 @@ def logout():
     return redirect(url_for("login"))
 
 
+
 @app.route("/")
 @login_required
 def index():
+
+    # Indicadores gerais do acervo
     total, disponiveis, emprestados = contar_status()
+
+    # Dados complementares do dashboard
+    dados = obter_dados_dashboard()
 
     return render_template(
         "admin/index.html",
+
+        # Indicadores principais
         total=total,
         disponiveis=disponiveis,
         emprestados=emprestados,
+
+        # Novos indicadores
+        atrasados=dados["atrasados"],
+        usuarios=dados["usuarios"],
+
+        # Informações para gráficos e tabelas
+        emprestimos_recentes=dados["recentes"],
+        livros_mais_emprestados=dados["mais_emprestados"],
+        emprestimos_mensais=dados["emprestimos_mensais"],
+        categorias=dados["categorias"],
+        agora=datetime.now().strftime("%Y-%m-%d")
     )
 
-
-@app.route(
-    "/cadastro_usuario",
-    methods=["GET", "POST"],
-    endpoint="cadastro_usuario"
-)
 def cadastroUsuario():
     if request.method == "POST":
         nome = request.form.get("nome", "").strip()
@@ -188,6 +210,84 @@ def cadastrarUsuarioAdmin():
         return redirect(url_for("index"))
 
     return render_template("admin/cadastrar_usuario.html")
+
+@app.route("/listar_usuarios")
+@login_required
+def listarUsuarios():
+
+    usuarios = listar_usuarios()
+
+    return render_template(
+        "admin/listar_usuarios.html",
+        usuarios=usuarios
+    )
+
+
+@app.route("/editar_usuario/<int:id_usuario>", methods=["GET", "POST"])
+@login_required
+def editarUsuario(id_usuario):
+
+    usuario = buscar_usuario_por_id(id_usuario)
+
+    if usuario is None:
+        flash("Usuário não encontrado.", "danger")
+        return redirect(url_for("listarUsuarios"))
+
+    if request.method == "POST":
+
+        nome = request.form.get("nome", "").strip()
+        login_usuario = request.form.get("login", "").strip()
+        senha = request.form.get("senha", "")
+        confirmar_senha = request.form.get("confirmar_senha", "")
+
+        if not nome or not login_usuario:
+            flash("Preencha nome e usuário.", "danger")
+
+        elif senha or confirmar_senha:
+
+            if len(senha) < 6:
+                flash(
+                    "A nova senha deve ter pelo menos 6 caracteres.",
+                    "danger"
+                )
+
+            elif senha != confirmar_senha:
+                flash("As senhas não conferem.", "danger")
+
+            else:
+                sucesso, erro = editar_usuario(
+                    id_usuario, nome, login_usuario, senha
+                )
+
+                if erro == "login_existente":
+                    flash("Esse nome de usuário já está em uso.", "warning")
+
+                elif sucesso:
+                    if session.get("usuario_id") == id_usuario:
+                        session["usuario_nome"] = nome
+
+                    flash("Usuário atualizado com sucesso!", "success")
+                    return redirect(url_for("listarUsuarios"))
+
+        else:
+            sucesso, erro = editar_usuario(
+                id_usuario, nome, login_usuario
+            )
+
+            if erro == "login_existente":
+                flash("Esse nome de usuário já está em uso.", "warning")
+
+            elif sucesso:
+                if session.get("usuario_id") == id_usuario:
+                    session["usuario_nome"] = nome
+
+                flash("Usuário atualizado com sucesso!", "success")
+                return redirect(url_for("listarUsuarios"))
+
+    return render_template(
+        "admin/editar_usuario.html",
+        usuario=usuario
+    )
 
 
 @app.route("/listar_livros")

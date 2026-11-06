@@ -1,22 +1,446 @@
+
 {% extends 'admin/base.html' %}
+
 {% block title %}Painel | ETEBookHub{% endblock %}
+
 {% block content %}
-<div class="page-heading d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-  <div><h1>Painel da biblioteca</h1><p>Tenha uma visão rápida do acervo e dos empréstimos.</p></div>
-  <a href="{{ url_for('cadastrarLivro') }}" class="btn btn-primary px-4"><i class="bi bi-plus-lg me-1"></i>Novo livro</a>
+
+<div class="container-fluid">
+
+    <!-- CABEÇALHO -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <h1 class="fw-bold mb-1">Painel da biblioteca</h1>
+            <p class="text-muted mb-0">
+                Acompanhe os indicadores e a movimentação do acervo escolar.
+            </p>
+        </div>
+
+        <a href="{{ url_for('cadastrarLivro') }}" class="btn btn-primary px-4">
+            <i class="bi bi-plus-lg me-1"></i>
+            Novo livro
+        </a>
+    </div>
+
+    <!-- INDICADORES -->
+    <div class="row g-3 mb-4">
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <p class="text-muted mb-1">Livros no acervo</p>
+                            <h2 class="fw-bold mb-0">{{ total }}</h2>
+                        </div>
+                        <i class="bi bi-book fs-1 text-primary"></i>
+                    </div>
+                    <a href="{{ url_for('listarLivros') }}"
+                       class="small text-decoration-none">
+                        Ver acervo <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <p class="text-muted mb-1">Disponíveis</p>
+                            <h2 class="fw-bold mb-0 text-success">{{ disponiveis }}</h2>
+                        </div>
+                        <i class="bi bi-check-circle fs-1 text-success"></i>
+                    </div>
+                    <a href="{{ url_for('listarLivros') }}"
+                       class="small text-decoration-none">
+                        Consultar livros <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <p class="text-muted mb-1">Emprestados</p>
+                            <h2 class="fw-bold mb-0 text-warning">{{ emprestados }}</h2>
+                        </div>
+                        <i class="bi bi-arrow-left-right fs-1 text-warning"></i>
+                    </div>
+                    <a href="{{ url_for('listarEmprestimos') }}"
+                       class="small text-decoration-none">
+                        Ver empréstimos <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <p class="text-muted mb-1">Atrasados</p>
+                            <h2 class="fw-bold mb-0 text-danger">{{ atrasados }}</h2>
+                        </div>
+                        <i class="bi bi-exclamation-circle fs-1 text-danger"></i>
+                    </div>
+                    <a href="{{ url_for('listarEmprestimos') }}"
+                       class="small text-decoration-none">
+                        Ver empréstimos <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <p class="text-muted mb-1">Usuários ativos</p>
+                            <h2 class="fw-bold mb-0 text-info">{{ usuarios }}</h2>
+                        </div>
+                        <i class="bi bi-people fs-1 text-info"></i>
+                    </div>
+                    <a href="{{ url_for('listarUsuarios') }}"
+                       class="small text-decoration-none">
+                        Ver usuários <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- GRÁFICOS -->
+    <div class="row g-4 mb-4">
+
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-0 pt-3">
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-graph-up text-primary me-2"></i>
+                        Empréstimos por mês
+                    </h5>
+                    <small class="text-muted">Movimentação dos últimos seis meses</small>
+                </div>
+
+                <div class="card-body">
+                    <div style="height: 300px;">
+                        <canvas id="graficoEmprestimos"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-0 pt-3">
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-pie-chart text-primary me-2"></i>
+                        Livros por categoria
+                    </h5>
+                    <small class="text-muted">Distribuição do acervo</small>
+                </div>
+
+                <div class="card-body">
+                    <div style="height: 300px;">
+                        <canvas id="graficoCategorias"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- RANKING E EMPRÉSTIMOS RECENTES -->
+    <div class="row g-4 mb-4">
+
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0 h-100">
+
+                <div class="card-header bg-white border-0 pt-3">
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-trophy text-warning me-2"></i>
+                        Livros mais emprestados
+                    </h5>
+                </div>
+
+                <div class="card-body">
+
+                    {% if livros_mais_emprestados %}
+
+                        {% for livro in livros_mais_emprestados %}
+
+                            <div class="mb-4">
+
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="fw-semibold">
+                                        {{ loop.index }}. {{ livro.titulo }}
+                                    </span>
+
+                                    <span class="text-muted small">
+                                        {{ livro.quantidade }} empréstimos
+                                    </span>
+                                </div>
+
+                                <div class="progress" style="height: 8px;">
+
+                                    <div
+                                        class="progress-bar bg-primary"
+                                        role="progressbar"
+                                        style="width: {{ (livro.quantidade / livros_mais_emprestados[0].quantidade * 100) if livros_mais_emprestados[0].quantidade else 0 }}%;"
+                                    ></div>
+
+                                </div>
+
+                            </div>
+
+                        {% endfor %}
+
+                    {% else %}
+
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-book fs-1"></i>
+                            <p class="mt-2 mb-0">
+                                Ainda não existem empréstimos registrados.
+                            </p>
+                        </div>
+
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 h-100">
+
+                <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-clock-history text-primary me-2"></i>
+                        Empréstimos recentes
+                    </h5>
+
+                    <a href="{{ url_for('listarEmprestimos') }}"
+                       class="small text-decoration-none">
+                        Ver todos
+                    </a>
+                </div>
+
+                <div class="card-body">
+
+                    {% if emprestimos_recentes %}
+
+                        <div class="table-responsive">
+
+                            <table class="table table-hover align-middle">
+
+                                <thead>
+                                    <tr>
+                                        <th>Aluno</th>
+                                        <th>Livro</th>
+                                        <th>Empréstimo</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+
+                                    {% for item in emprestimos_recentes %}
+
+                                        <tr>
+
+                                            <td>
+                                                <div class="fw-semibold">
+                                                    {{ item.nome_aluno }}
+                                                </div>
+                                                <small class="text-muted">
+                                                    {{ item.serie or '-' }}
+                                                </small>
+                                            </td>
+
+                                            <td>{{ item.titulo_livro }}</td>
+
+                                            <td>
+                                                {{ item.data_emprestimo | data_br }}
+                                            </td>
+
+                                            <td>
+
+                                                {% if item.data_devolucao %}
+
+                                                    <span class="badge bg-success">
+                                                        Devolvido
+                                                    </span>
+
+                                                {% elif item.prazo and item.prazo < agora %}
+
+                                                    <span class="badge bg-danger">
+                                                        Atrasado
+                                                    </span>
+
+                                                {% else %}
+
+                                                    <span class="badge bg-warning text-dark">
+                                                        Em andamento
+                                                    </span>
+
+                                                {% endif %}
+
+                                            </td>
+
+                                        </tr>
+
+                                    {% endfor %}
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    {% else %}
+
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-journal-x fs-1"></i>
+                            <p class="mt-2 mb-0">
+                                Nenhum empréstimo registrado.
+                            </p>
+                        </div>
+
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- BOAS-VINDAS -->
+    <div class="card shadow-sm border-0">
+        <div class="card-body d-flex flex-column flex-md-row align-items-md-center gap-3 p-4">
+
+            <div class="text-primary">
+                <i class="bi bi-book-half fs-1"></i>
+            </div>
+
+            <div class="flex-grow-1">
+                <h5 class="fw-bold mb-1">Bem-vindo ao ETEBookHub</h5>
+                <p class="text-muted mb-0">
+                    Organize o acervo escolar, acompanhe empréstimos
+                    e tenha uma visão completa da biblioteca.
+                </p>
+            </div>
+
+            <a href="{{ url_for('listarLivros') }}"
+               class="btn btn-outline-primary px-4">
+                Explorar acervo
+            </a>
+
+        </div>
+    </div>
+
 </div>
 
-<div class="row g-4 mb-4">
-  <div class="col-xl-4 col-md-6"><div class="stat-card stat-blue"><div class="stat-number">{{ total }}</div><div class="stat-label">Livros no acervo</div><div class="stat-icon"><i class="bi bi-book"></i></div><a class="stat-link" href="{{ url_for('listarLivros') }}">Ver acervo <i class="bi bi-arrow-right ms-1"></i></a></div></div>
-  <div class="col-xl-4 col-md-6"><div class="stat-card stat-green"><div class="stat-number">{{ disponiveis }}</div><div class="stat-label">Disponíveis para empréstimo</div><div class="stat-icon"><i class="bi bi-check2-circle"></i></div><a class="stat-link" href="{{ url_for('listarLivros') }}">Ver disponíveis <i class="bi bi-arrow-right ms-1"></i></a></div></div>
-  <div class="col-xl-4 col-md-12"><div class="stat-card stat-yellow"><div class="stat-number">{{ emprestados }}</div><div class="stat-label">Emprestados no momento</div><div class="stat-icon"><i class="bi bi-arrow-left-right"></i></div><a class="stat-link" href="{{ url_for('listarLivros') }}">Gerenciar empréstimos <i class="bi bi-arrow-right ms-1"></i></a></div></div>
-</div>
+{% endblock %}
 
-<div class="card welcome-card">
-  <div class="card-body d-flex flex-column flex-md-row align-items-md-center gap-4 p-4 p-lg-5">
-    <div class="welcome-icon"><i class="bi bi-book-half"></i></div>
-    <div class="flex-grow-1"><h3 class="fw-bold mb-2">Bem-vindo ao ETEBookHub</h3><p class="text-muted mb-0">Organize o acervo escolar, cadastre livros e acompanhe empréstimos em uma interface simples, limpa e moderna.</p></div>
-    <a href="{{ url_for('listarLivros') }}" class="btn btn-outline-primary px-4">Explorar acervo</a>
-  </div>
-</div>
+
+{% block scripts %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+    // Dados enviados pelo Flask
+    const dadosMeses = {{ emprestimos_mensais | tojson }};
+    const dadosCategorias = {{ categorias | tojson }};
+
+    // Gráfico de empréstimos mensais
+    const elementoEmprestimos = document.getElementById('graficoEmprestimos');
+
+    new Chart(elementoEmprestimos, {
+        type: 'bar',
+
+        data: {
+            labels: dadosMeses.map(item => item.mes),
+
+            datasets: [{
+                label: 'Empréstimos',
+                data: dadosMeses.map(item => item.quantidade),
+                backgroundColor: 'rgba(13, 110, 253, 0.75)',
+                borderColor: '#0d6efd',
+                borderWidth: 1,
+                borderRadius: 6
+            }]
+        },
+
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            }
+        }
+    });
+
+
+    // Gráfico de categorias
+    const elementoCategorias = document.getElementById('graficoCategorias');
+
+    new Chart(elementoCategorias, {
+        type: 'doughnut',
+
+        data: {
+            labels: dadosCategorias.map(item => item.categoria),
+
+            datasets: [{
+                data: dadosCategorias.map(item => item.quantidade),
+
+                backgroundColor: [
+                    '#0d6efd',
+                    '#198754',
+                    '#ffc107',
+                    '#dc3545',
+                    '#6f42c1',
+                    '#0dcaf0',
+                    '#fd7e14',
+                    '#6c757d'
+                ],
+
+                borderWidth: 2
+            }]
+        },
+
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+</script>
+
 {% endblock %}

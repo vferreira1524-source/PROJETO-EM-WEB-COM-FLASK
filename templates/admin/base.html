@@ -1,4 +1,4 @@
-```html
+
 <!doctype html>
 <html lang="pt-br">
 
@@ -302,6 +302,8 @@
         crossorigin="anonymous"></script>
 
 <script src="{{ url_for('static', filename='css/dist/js/adminlte.js') }}"></script>
+
+{% block scripts %}{% endblock %}
 
 </body>
 </html>

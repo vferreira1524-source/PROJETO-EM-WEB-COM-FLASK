@@ -130,16 +130,16 @@
 
                                     <button
                                         type="button"
-                                        class="btn btn-outline-primary action-btn"
-                                        title="Emprestar"
+                                        class="btn btn-sm"
+                                        style="background:#E8F0FE; color:#2563EB;"
                                         data-bs-toggle="modal"
                                         data-bs-target="#modalEmprestimo"
                                         data-livro-id="{{ livro['id'] }}"
                                         data-livro-titulo="{{ livro['titulo'] }}"
                                     >
-                                        <i class="bi bi-arrow-up-right"></i>
+                                        <i class="bi bi-arrow-up-right me-1"></i>
+                                        Emprestar
                                     </button>
-
                                 {% else %}
 
                                     <!-- DEVOLVER -->
@@ -148,13 +148,15 @@
                                         method="POST"
                                         onsubmit="return confirm('Confirmar a devolução deste livro?');"
                                     >
-                                        <button
-                                            type="submit"
-                                            class="btn btn-outline-success action-btn"
-                                            title="Devolver"
-                                        >
-                                            <i class="bi bi-arrow-down-left"></i>
-                                        </button>
+                                    <button
+                                        type="submit"
+                                        class="btn btn-sm"
+                                        style="background:#DCFCE7; color:#15803D;"
+                                        title="Devolver"
+                                    >
+                                        <i class="bi bi-arrow-down-left me-1"></i>
+                                        Devolver
+                                    </button>
                                     </form>
 
                                 {% endif %}

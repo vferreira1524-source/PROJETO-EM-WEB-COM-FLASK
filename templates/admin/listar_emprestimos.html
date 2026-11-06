@@ -57,10 +57,9 @@
 
                         <td>{{ emprestimo['serie'] or '-' }}</td>
 
-                        <td>{{ emprestimo['data_emprestimo'] }}</td>
-
+                        <td>{{ emprestimo['data_emprestimo'] | data_br }}</td>
                         <td>
-                            {{ emprestimo['prazo'] or '-' }}
+                            {{ emprestimo['prazo'] | data_br }}
                         </td>
 
                         <td>
